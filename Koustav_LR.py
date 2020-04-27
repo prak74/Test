@@ -36,7 +36,7 @@ def optimize(w,b,X,Y,num_iter,learning_rate):
 	params = {"w": w, "b": b}
 	return params
 
-def train(X_train, Y_train, num_iter=2000, learning_rate=0.01):
+def train(X_train, Y_train, num_iter=9000, learning_rate=0.0005):
 	X_train = X_train.to_numpy()
 	Y_train = Y_train.to_numpy().reshape((X_train.shape[0],1))
 	w,b = initialize(X_train.shape[1])
@@ -50,12 +50,19 @@ def predict(X_test, params):
 	Y_predict = (Y_predict > 0.5).astype(int)
 	return Y_predict
 
-def accuracy(Y_predict,Y_test):
-	Y_test = Y_test.to_numpy()
-	Y_test = Y_test.reshape((Y_predict.shape[0],1))
+def accuracy(Y_predict, Y_test):
+	Y_test = Y_test.to_numpy().reshape((Y_test.shape[0],1))
 	c = 0
 	m = Y_test.shape[0]
-	for i in range(Y_test.shape[0]):
-		if Y_test[i,0]==Y_predict[i,0]:
-			c+=1
+	c = m-(Y_predict^Y_test).astype(int).sum()
 	return c/m
+
+def f1score(Y_predict, Y_test):
+	Y_test = Y_test.to_numpy().reshape((Y_test.shape[0],1))
+	tp = (Y_predict & Y_test).astype(int).sum()
+	fn = (~Y_predict & Y_test).astype(int).sum()
+	fp = (Y_predict & ~Y_test).astype(int).sum()
+	precision = tp/(tp+fp)
+	recall = tp/(tp+fn)
+	f1 = 2*precision*recall/(precision+recall)
+	return f1
