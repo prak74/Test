@@ -159,31 +159,31 @@ def optimize(X, Y, layers_dims, num_epoc, minibatch_size, learning_rate, lambd):
 	return parameters
 
 def train(X_train, Y_train, layers_dims=[10], num_epoc=4500, minibatch_size = 64, learning_rate=0.005, lambd=0):  # layers_dims = list of no. of hidden units of each hidden layer
-	X_train = X_train.to_numpy().T
-	Y_train = Y_train.to_numpy().reshape((1,X_train.shape[1]))
-	layers_dims = [X_train.shape[0]] + layers_dims + [Y_train.shape[0]]
-	parameters = optimize(X_train, Y_train, layers_dims, num_epoc, minibatch_size, learning_rate, lambd)
+	X = X_train.copy().to_numpy().T
+	Y = Y_train.copy().to_numpy().reshape((1, X.shape[1]))
+	layers_dims = [X.shape[0]] + layers_dims + [Y.shape[0]]
+	parameters = optimize(X, Y, layers_dims, num_epoc, minibatch_size, learning_rate, lambd)
 	return parameters
 
 def predict(X_test, parameters):
-	X_test = X_test.to_numpy().T
-	AL, caches = forward_propagation(X_test, parameters)
+	X = X_test.copy().to_numpy().T
+	AL, caches = forward_propagation(X, parameters)
 	Y_predict = (AL > 0.5).astype(int)
 	return Y_predict.T
 
 def accuracy(Y_predict, Y_test):
-	Y_test = Y_test.to_numpy().reshape((Y_test.shape[0],1))
+	Y = Y_test.copy().to_numpy().reshape((Y_test.shape[0],1))
 	c = 0
-	m = Y_test.shape[0]
-	c = m-(Y_predict^Y_test).astype(int).sum()
+	m = Y.shape[0]
+	c = m-(Y_predict^Y).astype(int).sum()
 	return c/m
 
 def f1score(Y_predict, Y_test):
-	Y_test = Y_test.to_numpy().reshape((Y_test.shape[0],1))
-	tp = (Y_predict & Y_test).astype(int).sum()
-	fn = (~Y_predict & Y_test).astype(int).sum()
-	fp = (Y_predict & ~Y_test).astype(int).sum()
+	Y = Y_test.copy().to_numpy().reshape((Y_test.shape[0],1))
+	tp = (Y_predict & Y).astype(int).sum()
+	fn = (~Y_predict & Y).astype(int).sum()
+	fp = (Y_predict & ~Y).astype(int).sum()
 	precision = tp/(tp+fp)
 	recall = tp/(tp+fn)
 	f1 = 2*precision*recall/(precision+recall)
-	return f1
+	return f1, precision, recall
