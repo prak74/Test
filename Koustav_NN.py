@@ -174,6 +174,7 @@ def train(X_train, Y_train, layers_dims=[10], num_epoc=4500, minibatch_size = 64
 	else :
 		Y_predict = predict(X_train, parameters)
 		f1, precision, recall = f1score(Y_predict, Y_train)
+		train_acc = accuracy(Y_predict, Y_train)
 		return (train_acc, f1, precision, recall), parameters
 
 def predict(X_test, parameters):
