@@ -1,8 +1,10 @@
 import numpy as np
 
-# X is assumed to be dataframe(m,n)
-# m,n is the usual notation
-# Y is assumed to be dataframe(m,1)
+# X_train is input as numpy array(m_train,n)
+# Y_train is input as numpy array(m_train, classes) except for binary classification it is (m_train,1)
+# X_test is input as numpy array(m_test, n)
+# Y_test is input as numpy array(m_test, classes) except for binary classification it is (m_test,1)
+
 np.seterr(divide = 'ignore')
 
 def initialize(dim):
@@ -24,10 +26,10 @@ def propagate(w,b,X,Y):
 	grad = {"dw": dw,"db": db}
 	return grad
 
-def optimize(w,b,X,Y,num_iter,learning_rate):
+def optimize(w,b,X,Y,num_epoc,learning_rate):
 	dw = np.zeros((X.shape[1],1))
 	db = 0
-	for i in range(num_iter):
+	for i in range(num_epoc):
 		grad = propagate(w,b,X,Y)
 		dw = grad["dw"]
 		db = grad["db"]
@@ -36,29 +38,27 @@ def optimize(w,b,X,Y,num_iter,learning_rate):
 	params = {"w": w, "b": b}
 	return params
 
-def train(X_train, Y_train, num_iter=9000, learning_rate=0.001):
-	X = X_train.copy().to_numpy()
-	Y = Y_train.copy().to_numpy().reshape((X.shape[0],1))
-	w,b = initialize(X.shape[1])
-	params = optimize(w,b,X,Y,num_iter,learning_rate)
-	return params
+def train(X_train, Y_train, num_epoc=9000, learning_rate=0.001):
+	w,b = initialize(X_train.shape[1])
+	params = optimize(w,b,X_train,Y_train,num_epoc,learning_rate)
+	Y_predict = predict(X_train, params)
+	train_acc = accuracy(Y_predict, Y_train)
+	f1, precision, recall = f1score(Y_predict, Y_train)
+	return (train_acc, f1, precision, recall), params
 	
 def predict(X_test, params):
-	X = X_test.copy().to_numpy()
-	m = X.shape[0]
-	Y_predict = sigmoid(np.dot(X,params["w"])+params["b"])
-	Y_predict = (Y_predict > 0.5).astype(int)
+	Y_predict = sigmoid(np.dot(X_test,params["w"])+params["b"])
+	Y_predict = (Y_predict >= 0.5).astype(int)
 	return Y_predict
 
 def accuracy(Y_predict, Y_test):
-	Y = Y_test.copy().to_numpy().reshape((Y_test.shape[0],1))
 	c = 0
-	m = Y.shape[0]
-	c = m-(Y_predict^Y).astype(int).sum()
+	m = Y_predict.shape[0]
+	c = m-(Y_predict^Y_test).astype(int).sum()
 	return c/m
 
 def f1score(Y_predict, Y_test):
-	Y = Y_test.copy().to_numpy().reshape((Y_test.shape[0],1))
+	Y = Y_test
 	tp = (Y_predict & Y).astype(int).sum()
 	fn = (~Y_predict & Y).astype(int).sum()
 	fp = (Y_predict & ~Y).astype(int).sum()
