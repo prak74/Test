@@ -1,9 +1,9 @@
 import numpy as np
-import math
 
-# X is input as dataframe(m,n)
-# n, m are the usual notations
-# Y is input as dataframe(m,1)
+# X_train is input as numpy array(m_train,n)
+# Y_train is input as numpy array(m_train, classes) except for binary classification it is (m_train,1)
+# X_test is input as numpy array(m_test, n)
+# Y_test is input as numpy array(m_test, classes) except for binary classification it is (m_test,1)
 # all operations using X as matrix(n,m) & Y as matrix(1,m)
 # sigmoid activation
 
@@ -36,7 +36,7 @@ def random_mini_batches(X, Y, mini_batch_size, seed):
 	shuffled_X = X[:, permutation]
 	shuffled_Y = Y[:, permutation].reshape((1,m))
 
-	num_complete_minibatches = math.floor(m/mini_batch_size) # number of mini batches of size mini_batch_size in partitionin
+	num_complete_minibatches = int(m/mini_batch_size) # number of mini batches of size mini_batch_size in partitionin
 	for k in range(0, num_complete_minibatches):
 
 		mini_batch_X = shuffled_X[:, k*mini_batch_size : (k+1)*mini_batch_size]
@@ -73,7 +73,7 @@ def forward_propagation(X, parameters):
 
 	caches = []
 	A = X
-	L = len(parameters) // 2    
+	L = len(parameters) // 2
 	for l in range(1, L):
 		A_prev = A 
 		A, cache = linear_activation_forward(A_prev, parameters['W'+str(l)], parameters['b'+str(l)], "sigmoid")
@@ -159,31 +159,48 @@ def optimize(X, Y, layers_dims, num_epoc, minibatch_size, learning_rate, lambd):
 	return parameters
 
 def train(X_train, Y_train, layers_dims=[10], num_epoc=4500, minibatch_size = 64, learning_rate=0.005, lambd=0):  # layers_dims = list of no. of hidden units of each hidden layer
-	X_train = X_train.to_numpy().T
-	Y_train = Y_train.to_numpy().reshape((1,X_train.shape[1]))
-	layers_dims = [X_train.shape[0]] + layers_dims + [Y_train.shape[0]]
-	parameters = optimize(X_train, Y_train, layers_dims, num_epoc, minibatch_size, learning_rate, lambd)
-	return parameters
+	X = X_train.T
+	Y = Y_train.T
+	layers_dims = [X.shape[0]] + layers_dims + [Y.shape[0]]
+	parameters = optimize(X, Y, layers_dims, num_epoc, minibatch_size, learning_rate, lambd)
+	classes = Y.shape[0]
+	if classes>1 :
+		AL, caches = forward_propagation(X, parameters)
+		Y_temp = (AL >= 0.5).astype(int)
+		f1, precision, recall = f1score(Y_temp, Y)
+		Y_predict = predict(X_train, parameters)
+		train_acc = accuracy(Y_predict, Y_train)
+		return (train_acc, f1, precision, recall), parameters
+	else :
+		Y_predict = predict(X_train, parameters)
+		f1, precision, recall = f1score(Y_predict, Y_train)
+		train_acc = accuracy(Y_predict, Y_train)
+		return (train_acc, f1, precision, recall), parameters
 
 def predict(X_test, parameters):
-	X_test = X_test.to_numpy().T
-	AL, caches = forward_propagation(X_test, parameters)
-	Y_predict = (AL > 0.5).astype(int)
-	return Y_predict.T
+	X = X_test.T
+	AL, caches = forward_propagation(X, parameters)
+	if AL.shape[0]>1:
+		Y_predict = np.argmax(AL, axis = 0).reshape((X_test.shape[0],1))
+		return Y_predict
+	else :
+		Y_predict = (AL >= 0.5).astype(int)
+		return Y_predict.T
 
 def accuracy(Y_predict, Y_test):
-	Y_test = Y_test.to_numpy().reshape((Y_test.shape[0],1))
 	c = 0
-	m = Y_test.shape[0]
-	c = m-(Y_predict^Y_test).astype(int).sum()
+	m = Y_predict.shape[0]
+	for i in range(0,m):
+		if Y_predict[i,0]==Y_test[i,0]:
+			c+=1
 	return c/m
 
 def f1score(Y_predict, Y_test):
-	Y_test = Y_test.to_numpy().reshape((Y_test.shape[0],1))
-	tp = (Y_predict & Y_test).astype(int).sum()
-	fn = (~Y_predict & Y_test).astype(int).sum()
-	fp = (Y_predict & ~Y_test).astype(int).sum()
+	Y = Y_test
+	tp = (Y_predict & Y).astype(int).sum()
+	fn = (~Y_predict & Y).astype(int).sum()
+	fp = (Y_predict & ~Y).astype(int).sum()
 	precision = tp/(tp+fp)
 	recall = tp/(tp+fn)
 	f1 = 2*precision*recall/(precision+recall)
-	return f1
+	return f1, precision, recall
